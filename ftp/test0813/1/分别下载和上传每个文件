@@ -1,0 +1,124 @@
+
+=====================  20140813 HDFS 测试 ===========================
+
+运行 ftp_1.sh  即可
+输出 HDFS /input/lbs/recommend/user_click_sup_d/partitiontime=20140407 目录下 24 个文件到 FTP 上 
+
+[root@10dian73 zjy]# cat ftp_1.sh 
+#!/bin/sh
+
+
+START=`date +%s%N`;
+echo "Data trans start at "$START
+
+
+
+LOCAL_DIR=/tmp
+FILENAME=""
+FILE_ARRAY=($(hdfs dfs -du -h /input/lbs/recommend/user_click_sup_d/partitiontime=20140407 | awk '{print $3}'))
+
+CYC=${#FILE_ARRAY[@]}  
+
+for((i=0;i<$CYC;i++))
+do 
+
+	
+	HDFSFILEPATH=${FILE_ARRAY[i]}
+	FILENAME=`echo $HDFSFILEPATH | awk -F'/' '{print $7}'`
+	hdfs dfs -get $HDFSFILEPATH $LOCAL_DIR
+	
+	echo "downloading file:"$HDFSFILEPATH
+	echo "transfering file:"$LOCAL_DIR/$FILENAME
+	
+	sh ./upload.sh $FILENAME
+	
+	rm -rf $LOCAL_DIR/$FILENAME
+	
+done
+
+
+END=`date +%s%N`;
+echo "Data trans end at "$END
+
+time=$((END-START))
+time=`expr $time / 1000000`
+echo ${time}ms
+
+[root@10dian73 zjy]# cat upload.sh 
+#!/bin/sh
+
+
+LOCAL_DIR=/tmp
+FILENAME=$1
+
+
+echo "start upload file:"$LOCAL_DIR/$FILENAME
+ftp -n<<!
+open 1.1.1.1
+user rcuser password
+binary
+cd /test0813/shella
+lcd $LOCAL_DIR
+prompt
+put $LOCAL_DIR/$FILENAME $FILENAME 
+close
+bye
+!
+
+
+
+
+传输 hdfs://192.168.10.72:8020/input/lbs/recommend/user_click_sup_d/partitiontime=20140407 目录下所有文件到 FTP 服务器测试
+文件总大小： 613M
+
+1. 分别下载并传输每个文件
+
+shell 耗时： 133315ms
+
+2. 用接口传输
+
+TimeConsumed 57s. totalFileSize:612M.  totalFileNum:24. fileTransSuccessed:24. Speed: 11005.0 kbps
+传输速率： 11005.0 kbps
+
+
+3. 全部下载再传输总耗时
+Test1：
+ total time:132862ms
+Test2：
+download time:61189ms
+total time:136359ms
+
+
+如果传输本地文件的话，接口和 shell 时间基本一样
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Option (* = required)                   Description                         
+---------------------                   -----------                         
+--destdir [tableName 目录的上一级目录,此目录必须已经存                                      
+  在]                                                                        
+--help                                                                      
+--host                                  (default: 192.168.10.73-development,
+                                          xxx-production)        
+* --password                                                                
+--port                                  (default: 21)                       
+* --srcdir <要传输的文件所在目录,非本地文件需带 schema>                                      
+* --table <tableName 目录>                                                    
+* --user <ftpuser: rcuser> 
+
+
+
+--srcdir hdfs://192.168.10.72:8020/input/lbs/recommend/user_click_sup_d/partitiontime=20140407 -table mvntable1 -user rcuser -pass xxx
+
