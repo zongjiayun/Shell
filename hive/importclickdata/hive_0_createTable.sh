@@ -25,3 +25,10 @@ ju_version int, // 确认这列的类型
 
 page_stats_w string
 
+
+
+
+/tmp/testlzo/201408/20140816
+
+
+use recommenddb;alter table user_click_sup_d add partition (partitiontime='20140101') location '/input/lbs/recommend/user_click_sup_d/partitiontime=20140401'
